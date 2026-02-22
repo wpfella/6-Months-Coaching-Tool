@@ -1,0 +1,5 @@
+{
+  "name": "Crown Money Coaching Analysis Engine",
+  "description": "Internal financial coaching dashboard for Crown Money coaches to analyze client performance, track debt reduction, and model future OOD projections.",
+  "requestFramePermissions": []
+}
