@@ -10,10 +10,11 @@ interface InputSectionProps {
 }
 
 const InputSection: React.FC<InputSectionProps> = ({ data, setData }) => {
-  const [isProcessingRedraws, setIsProcessingRedraws] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [isAnalyzingHubSpot, setIsAnalyzingHubSpot] = useState(false);
   const [hubspotText, setHubspotText] = useState('');
+  const [accountName, setAccountName] = useState('');
+  const [statementDuration, setStatementDuration] = useState('1');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (field: keyof CoachingData, value: any) => {
@@ -89,7 +90,7 @@ const InputSection: React.FC<InputSectionProps> = ({ data, setData }) => {
         const result = await extractStatementData({
           base64Data: fileData,
           mimeType: file.type,
-          prompt: "Extract loan balance, available redraw, monthly totals, and review period dates."
+          prompt: `Extract loan balance, available redraw, monthly totals, and review period dates for a ${statementDuration} month statement for account ${accountName}.`
         });
 
         if (result) {
@@ -166,38 +167,6 @@ const InputSection: React.FC<InputSectionProps> = ({ data, setData }) => {
       savingsRate: 0
     };
     setData(prev => ({ ...prev, monthlyData: [...prev.monthlyData, newRow] }));
-  };
-
-  const handleProcessRedraws = async () => {
-    if (!data.rawRedrawsText.trim()) return;
-    setIsProcessingRedraws(true);
-    try {
-      const parsed = await parseRedrawsFromText(data.rawRedrawsText);
-      if (parsed && Array.isArray(parsed)) {
-        setData(prev => {
-          const newAdditionalRedraws = [...prev.additionalRedraws, ...parsed];
-          
-          // Auto-update monthlyData redraws based on the new additionalRedraws
-          const updatedMonthlyData = prev.monthlyData.map(m => {
-            const monthRedraws = newAdditionalRedraws
-              .filter(r => r.month.toLowerCase() === m.month.toLowerCase() && !r.excluded)
-              .reduce((sum, r) => sum + r.amount, 0);
-            return { ...m, redraws: monthRedraws };
-          });
-
-          return {
-            ...prev,
-            additionalRedraws: newAdditionalRedraws,
-            monthlyData: updatedMonthlyData
-          };
-        });
-        alert(`Successfully parsed ${parsed.length} redraw records!`);
-      }
-    } catch (error) {
-      alert('Failed to parse redraws. Please try again.');
-    } finally {
-      setIsProcessingRedraws(false);
-    }
   };
 
   const handleAnalyzeHubSpot = async () => {
@@ -353,11 +322,102 @@ const InputSection: React.FC<InputSectionProps> = ({ data, setData }) => {
         </div>
       </section>
 
-      {/* SECTION 2: COACH INPUT */}
+      {/* SECTION 2: MONTHLY PERFORMANCE LOGS */}
+      <section className="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm overflow-hidden">
+        <div className="flex justify-between items-center mb-10">
+          <h2 className="text-2xl font-black text-[#250B40] flex items-center gap-3">
+            <Table size={28} className="text-purple-500" /> Monthly Performance Logs
+          </h2>
+          <div className="flex gap-3">
+            <button 
+              onClick={handleClearMonthlyLogs}
+              className="px-6 py-3 bg-white border border-slate-200 text-slate-400 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-red-50 hover:text-red-500 hover:border-red-100 transition-all"
+            >
+              Clear Logs
+            </button>
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <input 
+                  type="text"
+                  placeholder="Account Name"
+                  className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black"
+                  value={accountName}
+                  onChange={(e) => setAccountName(e.target.value)}
+                />
+                <select 
+                  className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black"
+                  value={statementDuration}
+                  onChange={(e) => setStatementDuration(e.target.value)}
+                >
+                  <option value="1">1 Month</option>
+                  <option value="3">3 Months</option>
+                  <option value="6">6 Months</option>
+                  <option value="12">12 Months</option>
+                </select>
+              </div>
+              <div className="flex gap-2">
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileUpload} 
+                  accept="image/*,application/pdf,text/csv" 
+                  multiple
+                  className="hidden" 
+                />
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isExtracting}
+                  className={`flex-1 px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center gap-2 transition-all ${isExtracting ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                >
+                  {isExtracting ? <Zap size={14} className="animate-pulse" /> : <Upload size={14} />}
+                  {isExtracting ? 'Extracting...' : 'Upload Bank Statements'}
+                </button>
+                <button onClick={addMonth} className="px-6 py-3 bg-[#250B40] text-white rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center gap-2 hover:shadow-lg transition-all">
+                  <Plus size={14} /> Add Row
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-[10px] text-left">
+            <thead>
+              <tr className="bg-slate-50 text-slate-400">
+                <th className="px-4 py-4 font-black uppercase tracking-widest">Month</th>
+                <th className="px-4 py-4 font-black uppercase tracking-widest text-right">Debit</th>
+                <th className="px-4 py-4 font-black uppercase tracking-widest text-right">Credit</th>
+                <th className="px-4 py-4 font-black uppercase tracking-widest text-right">Balance</th>
+                <th className="px-4 py-4 font-black uppercase tracking-widest text-right">One-Off Credits</th>
+                <th className="px-4 py-4 font-black uppercase tracking-widest text-right">One-Off Debits</th>
+                <th className="px-4 py-4 font-black uppercase tracking-widest text-right">Total Additional Redraws</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 font-bold">
+              {data.monthlyData.map((m, i) => (
+                <tr key={i} className="hover:bg-slate-50/50">
+                  <td className="px-2 py-3"><input className="w-full bg-slate-50 border-none rounded-lg p-3 font-black" value={m.month} onChange={(e) => updateMonthlyData(i, 'month', e.target.value)} /></td>
+                  <td className="px-2 py-3"><input type="number" className="w-full bg-slate-50 border-none rounded-lg p-3 text-right font-bold text-red-600" value={m.debit} onChange={(e) => updateMonthlyData(i, 'debit', Number(e.target.value))} /></td>
+                  <td className="px-2 py-3"><input type="number" className="w-full bg-slate-50 border-none rounded-lg p-3 text-right font-bold text-emerald-600" value={m.credit} onChange={(e) => updateMonthlyData(i, 'credit', Number(e.target.value))} /></td>
+                  <td className="px-2 py-3"><input type="number" className="w-full bg-slate-50 border-none rounded-lg p-3 text-right font-black" value={m.loanBalance} onChange={(e) => updateMonthlyData(i, 'loanBalance', Number(e.target.value))} /></td>
+                  <td className="px-2 py-3"><input type="number" className="w-full bg-slate-50 border-none rounded-lg p-3 text-right text-indigo-600" value={m.oneOffCreditsRemoved} onChange={(e) => updateMonthlyData(i, 'oneOffCreditsRemoved', Number(e.target.value))} /></td>
+                  <td className="px-2 py-3"><input type="number" className="w-full bg-slate-50 border-none rounded-lg p-3 text-right text-orange-600" value={m.oneOffDebitsRemoved} onChange={(e) => updateMonthlyData(i, 'oneOffDebitsRemoved', Number(e.target.value))} /></td>
+                  <td className="px-2 py-3"><input type="number" className="w-full bg-slate-50 border-none rounded-lg p-3 text-right text-purple-600" value={m.redraws} readOnly /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="mt-8 flex gap-4 p-8 bg-slate-50 rounded-2xl text-base font-black text-slate-500 border border-slate-100 items-center">
+           <Info size={24} className="text-indigo-500" /> 
+           <span>Once-off debits and credits are removed from our projections to show a more accurate picture of underlying performance</span>
+        </div>
+      </section>
+
+      {/* SECTION 3: EXTRACTED DETAILS */}
       <section className="bg-slate-50 p-10 rounded-[2.5rem] space-y-8 border border-slate-100">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-black text-[#250B40] flex items-center gap-3">
-            <Calculator size={28} className="text-emerald-500" /> Coach Input
+            <Calculator size={28} className="text-emerald-500" /> Extracted Details
           </h2>
           <div className="flex gap-3">
             <button 
@@ -392,94 +452,6 @@ const InputSection: React.FC<InputSectionProps> = ({ data, setData }) => {
               </div>
             </div>
           </div>
-
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <label className={labelClasses}>Redraws List (Paste from HubSpot)</label>
-              <button 
-                onClick={handleProcessRedraws}
-                disabled={isProcessingRedraws || !data.rawRedrawsText.trim()}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${isProcessingRedraws ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-[#250B40] text-white hover:shadow-lg active:scale-95'}`}
-              >
-                {isProcessingRedraws ? <Zap size={12} className="animate-pulse" /> : <Sparkles size={12} />}
-                {isProcessingRedraws ? 'Processing...' : 'Process with AI'}
-              </button>
-            </div>
-            <textarea 
-              className="w-full h-40 p-5 bg-white border border-slate-200 rounded-3xl outline-none focus:ring-2 focus:ring-[#250B40] font-bold text-[#250B40] text-xs"
-              placeholder="Paste notes from HubSpot here... e.g. 28.01.25 $100 hockey academy fees..."
-              value={data.rawRedrawsText}
-              onChange={(e) => handleChange('rawRedrawsText', e.target.value)}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 3: MONTHLY PERFORMANCE LOGS */}
-      <section className="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm overflow-hidden">
-        <div className="flex justify-between items-center mb-10">
-          <h2 className="text-2xl font-black text-[#250B40] flex items-center gap-3">
-            <Table size={28} className="text-purple-500" /> Monthly Performance Logs
-          </h2>
-          <div className="flex gap-3">
-            <button 
-              onClick={handleClearMonthlyLogs}
-              className="px-6 py-3 bg-white border border-slate-200 text-slate-400 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-red-50 hover:text-red-500 hover:border-red-100 transition-all"
-            >
-              Clear Logs
-            </button>
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleFileUpload} 
-              accept="image/*,application/pdf,text/csv" 
-              multiple
-              className="hidden" 
-            />
-            <button 
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isExtracting}
-              className={`px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center gap-2 transition-all ${isExtracting ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-            >
-              {isExtracting ? <Zap size={14} className="animate-pulse" /> : <Upload size={14} />}
-              {isExtracting ? 'Extracting...' : 'Upload Bank Statements'}
-            </button>
-            <button onClick={addMonth} className="px-6 py-3 bg-[#250B40] text-white rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center gap-2 hover:shadow-lg transition-all">
-              <Plus size={14} /> Add Performance Row
-            </button>
-          </div>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-[10px] text-left">
-            <thead>
-              <tr className="bg-slate-50 text-slate-400">
-                <th className="px-4 py-4 font-black uppercase tracking-widest">Month</th>
-                <th className="px-4 py-4 font-black uppercase tracking-widest text-right">Debit</th>
-                <th className="px-4 py-4 font-black uppercase tracking-widest text-right">Credit</th>
-                <th className="px-4 py-4 font-black uppercase tracking-widest text-right">Balance</th>
-                <th className="px-4 py-4 font-black uppercase tracking-widest text-right">One-Off Credits</th>
-                <th className="px-4 py-4 font-black uppercase tracking-widest text-right">One-Off Debits</th>
-                <th className="px-4 py-4 font-black uppercase tracking-widest text-right">Total Additional Redraws</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 font-bold">
-              {data.monthlyData.map((m, i) => (
-                <tr key={i} className="hover:bg-slate-50/50">
-                  <td className="px-2 py-3"><input className="w-full bg-slate-50 border-none rounded-lg p-3 font-black" value={m.month} onChange={(e) => updateMonthlyData(i, 'month', e.target.value)} /></td>
-                  <td className="px-2 py-3"><input type="number" className="w-full bg-slate-50 border-none rounded-lg p-3 text-right font-bold text-red-600" value={m.debit} onChange={(e) => updateMonthlyData(i, 'debit', Number(e.target.value))} /></td>
-                  <td className="px-2 py-3"><input type="number" className="w-full bg-slate-50 border-none rounded-lg p-3 text-right font-bold text-emerald-600" value={m.credit} onChange={(e) => updateMonthlyData(i, 'credit', Number(e.target.value))} /></td>
-                  <td className="px-2 py-3"><input type="number" className="w-full bg-slate-50 border-none rounded-lg p-3 text-right font-black" value={m.loanBalance} onChange={(e) => updateMonthlyData(i, 'loanBalance', Number(e.target.value))} /></td>
-                  <td className="px-2 py-3"><input type="number" className="w-full bg-slate-50 border-none rounded-lg p-3 text-right text-indigo-600" value={m.oneOffCreditsRemoved} onChange={(e) => updateMonthlyData(i, 'oneOffCreditsRemoved', Number(e.target.value))} /></td>
-                  <td className="px-2 py-3"><input type="number" className="w-full bg-slate-50 border-none rounded-lg p-3 text-right text-orange-600" value={m.oneOffDebitsRemoved} onChange={(e) => updateMonthlyData(i, 'oneOffDebitsRemoved', Number(e.target.value))} /></td>
-                  <td className="px-2 py-3"><input type="number" className="w-full bg-slate-50 border-none rounded-lg p-3 text-right text-purple-600" value={m.redraws} readOnly /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="mt-8 flex gap-4 p-8 bg-slate-50 rounded-2xl text-base font-black text-slate-500 border border-slate-100 items-center">
-           <Info size={24} className="text-indigo-500" /> 
-           <span>Once-off debits and credits are removed from our projections to show a more accurate picture of underlying performance</span>
         </div>
       </section>
     </div>

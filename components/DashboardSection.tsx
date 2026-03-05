@@ -34,7 +34,7 @@ const DashboardSection: React.FC<DashboardSectionProps> = ({ data, results }) =>
   }));
 
   const ownershipData = [
-    { name: 'You Own', value: results.homeOwnership.youOwn, color: COLORS.owner },
+    { name: 'You Own', value: results.homeOwnership.youOwn, color: '#10b981' },
     { name: 'Bank Owns', value: results.homeOwnership.bankOwns, color: COLORS.bank }
   ];
 

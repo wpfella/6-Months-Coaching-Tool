@@ -302,7 +302,7 @@ const App: React.FC = () => {
                 <div className="space-y-12 pb-32">
                   <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-200">
                     <div className="flex gap-4 border-b border-slate-100 mb-10 overflow-x-auto">
-                      {['inputs', 'dashboard', 'projections', 'steps', 'redraws', 'export'].map(tab => (
+                      {['inputs', 'redraws', 'dashboard', 'projections', 'steps', 'export'].map(tab => (
                         <button 
                           key={tab} 
                           onClick={() => setActiveTab(tab)}

@@ -64,9 +64,18 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ data, results }) => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Main Summary Chart */}
         <div className="bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm">
-          <h4 className="text-xs font-black uppercase tracking-widest text-[#250B40] mb-8 flex items-center gap-2">
-            <Zap size={16} className="text-amber-500" /> Review Period Snapshot
-          </h4>
+          <div className="flex justify-between items-center mb-8">
+            <h4 className="text-xs font-black uppercase tracking-widest text-[#250B40] flex items-center gap-2">
+              <Zap size={16} className="text-amber-500" /> Review Period Snapshot
+            </h4>
+            <div className="group relative">
+              <div className="text-[10px] font-black text-slate-400 border border-slate-200 px-2 py-1 rounded-md cursor-help">What is Net Progress?</div>
+              <div className="pointer-events-none absolute bottom-full right-0 mb-2 w-64 rounded-xl bg-slate-800 p-3 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100 z-50 shadow-2xl">
+                Net Progress is your actual debt reduction after accounting for any additional redraws taken during the period. It represents the "real" movement in your loan balance.
+                <div className="absolute top-full right-4 border-8 border-transparent border-t-slate-800" />
+              </div>
+            </div>
+          </div>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={summaryData} layout="vertical" margin={{ left: 20, right: 40 }}>

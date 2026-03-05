@@ -5,7 +5,7 @@ import { format, addMonths, parseISO, differenceInMonths, differenceInYears } fr
 export function performCalculations(data: CoachingData): CalculationResults {
   const openingBalance = data.monthlyData[0]?.loanBalance + (data.monthlyData[0]?.debit - data.monthlyData[0]?.credit) || data.previousBalance6Months;
   
-  const totalDebtReduction = openingBalance - data.currentLoanBalance;
+  const totalDebtReduction = Math.max(0, openingBalance - data.currentLoanBalance);
   const avgMonthlyDebtReduction = totalDebtReduction / Math.max(1, data.monthlyData.length);
 
   const actualIncome = data.monthlyData.reduce((sum, m) => sum + (m.credit - m.oneOffCreditsRemoved), 0);
@@ -97,15 +97,19 @@ export function modelCurvedOOD(
   let currentBalance = balance;
   let month = 0;
 
-  while (currentBalance > 0 && month < 360) {
+  while (currentBalance > 0 && month < 480) {
     if (month % 12 === 0) {
-      points.push({ name: (month / 12).toString(), balance: Math.max(0, currentBalance), year: month / 12 });
+      const yearName = format(addMonths(new Date(), month), 'yyyy');
+      points.push({ name: yearName, balance: Math.max(0, currentBalance), year: month / 12 });
     }
     const interestCharge = currentBalance * monthlyRate;
     const principalReduction = monthlyRepaymentCapacity - interestCharge;
     if (principalReduction <= 0) {
         // Loan will never be paid off at this rate
-        for(let i=points.length; i<=30; i++) points.push({ name: i.toString(), balance: currentBalance, year: i });
+        for(let i=month; i<=480; i+=12) {
+          const yearName = format(addMonths(new Date(), i), 'yyyy');
+          points.push({ name: yearName, balance: currentBalance, year: i/12 });
+        }
         break;
     }; 
     currentBalance -= principalReduction;

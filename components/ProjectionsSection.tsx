@@ -83,7 +83,7 @@ const ProjectionsSection: React.FC<ProjectionsSectionProps> = ({ data, results, 
                 {formatAUD(data.proposedFlexAmount)}<span className="text-[10px] ml-1 text-slate-400">/mo</span>
               </span>
             </div>
-            <p className="text-xs text-slate-400 font-bold leading-relaxed">Adjust your FLEX (redraw usage) to see the impact on your OOD (Out of Debt) timeline. Lower redraw = Faster debt freedom.</p>
+            <p className="text-xs text-slate-400 font-bold leading-relaxed">Adjust your FLEX (additional monthly redraws) to see the impact on your OOD (Out of Debt) timeline. Lower redraw = Faster debt freedom.</p>
             <input 
               type="range" min="0" max="5000" step="100" className="w-full accent-[#250B40] h-3 bg-slate-100 rounded-full"
               value={data.proposedFlexAmount}
