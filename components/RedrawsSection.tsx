@@ -7,11 +7,18 @@ interface RedrawsSectionProps {
   data: CoachingData;
   setData: React.Dispatch<React.SetStateAction<CoachingData>>;
   results: CalculationResults;
+  readOnly?: boolean;
 }
 
-const RedrawsSection: React.FC<RedrawsSectionProps> = ({ data, setData, results }) => {
+const RedrawsSection: React.FC<RedrawsSectionProps> = ({ data, setData, results, readOnly }) => {
   const [pasteBuffer, setPasteBuffer] = useState('');
   const [manualEntry, setManualEntry] = useState({ date: '', amount: '', description: '' });
+
+  const handleClearRedraws = () => {
+    if (window.confirm('Are you sure you want to clear all redraw transactions?')) {
+      setData(prev => ({ ...prev, additionalRedraws: [] }));
+    }
+  };
 
   const handlePaste = () => {
     const lines = pasteBuffer.split('\n');
@@ -69,76 +76,85 @@ const RedrawsSection: React.FC<RedrawsSectionProps> = ({ data, setData, results 
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Avg. Monthly Redraw</p>
           <h3 className="text-2xl font-black text-[#250B40] tracking-tighter">{formatAUD(results.avgMonthlyAdditionalRedraws)}</h3>
         </div>
-        <div className="bg-[#F7F5F9] p-6 rounded-[2rem] border border-[#E6DEEE] shadow-sm">
+        <div className="bg-[#F7F5F9] p-6 rounded-[2rem] border border-[#E6DEEE] shadow-sm relative group">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Transactions Count</p>
           <h3 className="text-2xl font-black text-[#250B40] tracking-tighter">{data.additionalRedraws.length} Events</h3>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
-          <div className="flex items-center gap-2 mb-6">
-            <Clipboard size={20} className="text-[#250B40]" />
-            <h3 className="text-xl font-black text-[#250B40] uppercase tracking-tight">Bulk Import (HubSpot)</h3>
-          </div>
-          <textarea 
-            className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-2xl font-mono text-xs outline-none focus:ring-2 focus:ring-[#250B40]"
-            placeholder="Paste redraw list from HubSpot notes here... (Date   Amount   Description)"
-            value={pasteBuffer}
-            onChange={(e) => setPasteBuffer(e.target.value)}
-          />
           <button 
-            onClick={handlePaste}
-            disabled={!pasteBuffer}
-            className="mt-4 w-full py-4 bg-[#250B40] text-white rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-slate-800 transition-all shadow-lg shadow-purple-900/10"
+            onClick={handleClearRedraws}
+            className="absolute top-4 right-4 p-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+            title="Clear all redraws"
           >
-            <Plus size={16} /> Parse & Add Items
-          </button>
-        </div>
-
-        <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
-          <div className="flex items-center gap-2 mb-6">
-            <FileText size={20} className="text-[#250B40]" />
-            <h3 className="text-xl font-black text-[#250B40] uppercase tracking-tight">Manual Entry</h3>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Description</label>
-              <input 
-                className="w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-1 focus:ring-[#250B40] text-sm"
-                value={manualEntry.description}
-                onChange={(e) => setManualEntry({ ...manualEntry, description: e.target.value })}
-                placeholder="Holiday, Car Repair, etc."
-              />
-            </div>
-            <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount</label>
-              <input 
-                type="number"
-                className="w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-1 focus:ring-[#250B40] text-sm font-bold"
-                value={manualEntry.amount}
-                onChange={(e) => setManualEntry({ ...manualEntry, amount: e.target.value })}
-                placeholder="0.00"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</label>
-              <input 
-                type="date"
-                className="w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-1 focus:ring-[#250B40] text-sm"
-                value={manualEntry.date}
-                onChange={(e) => setManualEntry({ ...manualEntry, date: e.target.value })}
-              />
-            </div>
-          </div>
-          <button 
-            onClick={addManualRedraw}
-            className="mt-6 w-full py-4 border-2 border-[#250B40] text-[#250B40] rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-[#250B40] hover:text-white transition-all"
-          >
-            <Plus size={16} /> Add Transaction
+            <Trash2 size={16} />
           </button>
         </div>
       </div>
+
+      {!readOnly && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
+            <div className="flex items-center gap-2 mb-6">
+              <Clipboard size={20} className="text-[#250B40]" />
+              <h3 className="text-xl font-black text-[#250B40] uppercase tracking-tight">Bulk Import (HubSpot)</h3>
+            </div>
+            <textarea 
+              className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-2xl font-mono text-xs outline-none focus:ring-2 focus:ring-[#250B40]"
+              placeholder="Paste redraw list from HubSpot notes here... (Date   Amount   Description)"
+              value={pasteBuffer}
+              onChange={(e) => setPasteBuffer(e.target.value)}
+            />
+            <button 
+              onClick={handlePaste}
+              disabled={!pasteBuffer}
+              className="mt-4 w-full py-4 bg-[#250B40] text-white rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-slate-800 transition-all shadow-lg shadow-purple-900/10"
+            >
+              <Plus size={16} /> Parse & Add Items
+            </button>
+          </div>
+
+          <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
+            <div className="flex items-center gap-2 mb-6">
+              <FileText size={20} className="text-[#250B40]" />
+              <h3 className="text-xl font-black text-[#250B40] uppercase tracking-tight">Manual Entry</h3>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Description</label>
+                <input 
+                  className="w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-1 focus:ring-[#250B40] text-sm"
+                  value={manualEntry.description}
+                  onChange={(e) => setManualEntry({ ...manualEntry, description: e.target.value })}
+                  placeholder="Holiday, Car Repair, etc."
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount</label>
+                <input 
+                  type="number"
+                  className="w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-1 focus:ring-[#250B40] text-sm font-bold"
+                  value={manualEntry.amount}
+                  onChange={(e) => setManualEntry({ ...manualEntry, amount: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</label>
+                <input 
+                  type="date"
+                  className="w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-1 focus:ring-[#250B40] text-sm"
+                  value={manualEntry.date}
+                  onChange={(e) => setManualEntry({ ...manualEntry, date: e.target.value })}
+                />
+              </div>
+            </div>
+            <button 
+              onClick={addManualRedraw}
+              className="mt-6 w-full py-4 border-2 border-[#250B40] text-[#250B40] rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-[#250B40] hover:text-white transition-all"
+            >
+              <Plus size={16} /> Add Transaction
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm">
         <table className="w-full text-left">
@@ -148,7 +164,7 @@ const RedrawsSection: React.FC<RedrawsSectionProps> = ({ data, setData, results 
               <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Description</th>
               <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount</th>
               <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Include?</th>
-              <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions</th>
+              {!readOnly && <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
@@ -162,15 +178,18 @@ const RedrawsSection: React.FC<RedrawsSectionProps> = ({ data, setData, results 
                     type="checkbox" 
                     className="w-6 h-6 accent-[#250B40] cursor-pointer rounded-lg border-slate-200" 
                     checked={!r.excluded} 
-                    onChange={() => toggleExclude(r.id)}
+                    onChange={() => !readOnly && toggleExclude(r.id)}
+                    disabled={readOnly}
                     title={r.excluded ? "Excluded from calculation" : "Included in calculation"}
                   />
                 </td>
-                <td className="px-8 py-5">
-                  <button onClick={() => deleteRedraw(r.id)} className="text-slate-300 hover:text-red-500 transition-colors">
-                    <Trash2 size={18} />
-                  </button>
-                </td>
+                {!readOnly && (
+                  <td className="px-8 py-5">
+                    <button onClick={() => deleteRedraw(r.id)} className="text-slate-300 hover:text-red-500 transition-colors">
+                      <Trash2 size={18} />
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

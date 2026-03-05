@@ -11,6 +11,7 @@ interface ExportSectionProps {
 
 const ExportSection: React.FC<ExportSectionProps> = ({ data, results }) => {
   const [copied, setCopied] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const today = format(new Date(), 'dd.MM.yy');
   const periodDays = data.reviewPeriodType === '90 Days' ? 90 : (data.reviewPeriodType === '6 Months' ? 183 : 365);
   
@@ -27,6 +28,58 @@ const ExportSection: React.FC<ExportSectionProps> = ({ data, results }) => {
     .map(([id]) => id)
     .join(', ');
 
+  const handleExportToHubSpot = async () => {
+    setExporting(true);
+    
+    const last3Months = data.monthlyData.slice(-3).reduce((acc, m) => acc + m.actualDebtReduction, 0);
+    const last6Months = data.monthlyData.slice(-6).reduce((acc, m) => acc + m.actualDebtReduction, 0);
+    const last12Months = data.monthlyData.slice(-12).reduce((acc, m) => acc + m.actualDebtReduction, 0);
+
+    const formatCurrency = (val: number) => new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(val);
+
+    const payload = {
+      last90DaysReduction: `${today} (90 days) - ${formatCurrency(last3Months)}`,
+      last6MonthsReduction: `${today} (183 days) - ${formatCurrency(last6Months)}`,
+      last12MonthsReduction: `${today} (365 days) - ${formatCurrency(last12Months)}`,
+      avgMonthlyExpenses: formatCurrency(results.avgMonthlyExpenses),
+      currentDebtFreeDate: results.currentDebtFreeDate,
+      savingsRate: `${results.savingsRate.toFixed(1)}%`,
+      stepsCompleted: stepsSummary || "None",
+      annualDebtReductionGoal: formatCurrency(results.avgMonthlyDebtReduction * 12),
+      currentLVR: `${results.currentLVR.toFixed(1)}%`,
+      clientEmail: data.clientEmail,
+      timestamp: new Date().toISOString()
+    };
+
+    try {
+      // Using a GET request with query parameters is the most reliable way to send data 
+      // to a Zapier webhook from a browser. It bypasses CORS restrictions and 
+      // Zapier automatically parses each parameter into an individual field.
+      const baseUrl = 'https://hooks.zapier.com/hooks/catch/24598887/u04kh5q';
+      
+      const params = new URLSearchParams();
+      Object.entries(payload).forEach(([key, value]) => {
+        params.append(key, value.toString());
+      });
+
+      const url = `${baseUrl}?${params.toString()}`;
+      
+      console.log('Sending to Zapier (GET):', url);
+
+      await fetch(url, {
+        method: 'GET',
+        mode: 'no-cors'
+      });
+      
+      alert('Data successfully pushed to HubSpot! In Zapier, you will find these as individual fields in the "Querystring" or "Params" section of your trigger.');
+    } catch (error) {
+      console.error('HubSpot Export Error:', error);
+      alert('Failed to push data to HubSpot. Please check your connection.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const hubspotData = [
     { label: "Last Review Debt Reduction", value: `$${results.totalDebtReduction.toFixed(2)}` },
     { label: "Average Monthly Expenses", value: `$${results.avgMonthlyExpenses.toFixed(2)}` },
@@ -38,9 +91,19 @@ const ExportSection: React.FC<ExportSectionProps> = ({ data, results }) => {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
-        <div className="mb-6">
-          <h3 className="text-xl font-bold text-slate-800">HubSpot "All Review Results" Entry</h3>
-          <p className="text-slate-500 text-sm mt-1">Copy this string and append it to the client's multi-line property in HubSpot.</p>
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h3 className="text-xl font-bold text-slate-800">HubSpot "All Review Results" Entry</h3>
+            <p className="text-slate-500 text-sm mt-1">Copy this string and append it to the client's multi-line property in HubSpot.</p>
+          </div>
+          <button 
+            onClick={handleExportToHubSpot}
+            disabled={exporting}
+            className="px-6 py-3 bg-[#250B40] text-white rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center gap-2 hover:bg-slate-800 transition-all disabled:opacity-50 shadow-lg shadow-purple-900/10"
+          >
+            {exporting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <ExternalLink size={14} />}
+            {exporting ? 'Exporting...' : 'Export to HubSpot'}
+          </button>
         </div>
 
         <div className="flex items-center gap-3 bg-slate-50 p-6 rounded-xl border border-slate-200">

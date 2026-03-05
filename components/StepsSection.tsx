@@ -7,6 +7,7 @@ interface StepsSectionProps {
   data: CoachingData;
   results: CalculationResults;
   setData: React.Dispatch<React.SetStateAction<CoachingData>>;
+  readOnly?: boolean;
 }
 
 const STEP_DETAILS = [
@@ -84,7 +85,7 @@ const STEP_DETAILS = [
   }
 ];
 
-const StepsSection: React.FC<StepsSectionProps> = ({ data, results, setData }) => {
+const StepsSection: React.FC<StepsSectionProps> = ({ data, results, setData, readOnly }) => {
   const handleOverride = (stepId: number, status: StepStatus) => {
     setData(prev => ({
       ...prev,
@@ -145,32 +146,34 @@ const StepsSection: React.FC<StepsSectionProps> = ({ data, results, setData }) =
                 <StatusBadge status={currentStatus} />
               </div>
               
-              <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-50">
-                <div className="flex-1 flex gap-1 p-1 bg-slate-50 rounded-2xl">
-                  {[StepStatus.YES, StepStatus.NO, StepStatus.DISCRETION].map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => handleOverride(step.id, s)}
-                      className={`flex-1 text-[9px] py-2 rounded-xl font-black uppercase tracking-widest transition-all ${
-                        manualStatus === s 
-                          ? 'bg-[#250B40] text-white shadow-lg scale-[1.02]' 
-                          : 'text-slate-400 hover:bg-slate-200 hover:text-slate-600'
-                      }`}
+              {!readOnly && (
+                <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-50">
+                  <div className="flex-1 flex gap-1 p-1 bg-slate-50 rounded-2xl">
+                    {[StepStatus.YES, StepStatus.NO, StepStatus.DISCRETION].map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => handleOverride(step.id, s)}
+                        className={`flex-1 text-[9px] py-2 rounded-xl font-black uppercase tracking-widest transition-all ${
+                          manualStatus === s 
+                            ? 'bg-[#250B40] text-white shadow-lg scale-[1.02]' 
+                            : 'text-slate-400 hover:bg-slate-200 hover:text-slate-600'
+                        }`}
+                      >
+                        {s === StepStatus.DISCRETION ? 'Disc.' : s}
+                      </button>
+                    ))}
+                  </div>
+                  {manualStatus && (
+                    <button 
+                      onClick={() => clearOverride(step.id)}
+                      className="p-2 text-slate-300 hover:text-red-500 transition-colors"
+                      title="Clear Override"
                     >
-                      {s === StepStatus.DISCRETION ? 'Disc.' : s}
+                      <RotateCcw size={14} />
                     </button>
-                  ))}
+                  )}
                 </div>
-                {manualStatus && (
-                  <button 
-                    onClick={() => clearOverride(step.id)}
-                    className="p-2 text-slate-300 hover:text-red-500 transition-colors"
-                    title="Clear Override"
-                  >
-                    <RotateCcw size={14} />
-                  </button>
-                )}
-              </div>
+              )}
             </div>
           );
         })}

@@ -6,13 +6,13 @@ export enum ReviewPeriodType {
 }
 
 export enum WeeklySpendingDay {
-  MON = 'Mon',
-  TUE = 'Tue',
-  WED = 'Wed',
-  THU = 'Thu',
-  FRI = 'Fri',
-  SAT = 'Sat',
-  SUN = 'Sun'
+  MONDAY = 'Monday',
+  TUESDAY = 'Tuesday',
+  WEDNESDAY = 'Wednesday',
+  THURSDAY = 'Thursday',
+  FRIDAY = 'Friday',
+  SATURDAY = 'Saturday',
+  SUNDAY = 'Sunday'
 }
 
 export enum StepStatus {
@@ -60,6 +60,7 @@ export interface CoachingData {
   settlementDate: string;
   settlementLoanAmount: number;
   householdNames: string;
+  loanIdentifier: string;
   propertyAddress: string;
   propertyImageUrl: string;
   startDate: string;
